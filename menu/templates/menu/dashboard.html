@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Dashboard</title>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <style>
+        .glass {
+            backdrop-filter: blur(10px);
+            background: rgba(255,255,255,0.8);
+        }
+        .dark .glass {
+            background: rgba(17,24,39,0.8);
+        }
+    </style>
+</head>
+
+<body class="bg-gray-100 dark:bg-gray-900 transition">
+
+<!-- SIDEBAR -->
+<div class="fixed left-0 top-0 h-full w-64 bg-gray-900 text-white p-6">
+    <h1 class="text-xl font-bold mb-6">📊 Dashboard Panel</h1>
+
+    <nav class="space-y-3 text-gray-300">
+        <a href="#" class="block hover:text-white">Dashboard</a>
+        <a href="/reports/" class="block hover:text-white">Reports</a>
+        <a href="/logout/" class="block hover:text-white">Logout</a>
+    </nav>
+
+    <button onclick="toggleDark()" class="mt-10 px-3 py-2 bg-gray-700 rounded">
+        🌙 Toggle Dark
+    </button>
+</div>
+
+<!-- MAIN -->
+<div class="ml-64 p-6">
+
+    <!-- HEADER -->
+    <div class="flex justify-between items-center mb-6">
+        <h1 class="text-2xl font-bold text-gray-800 dark:text-white">
+            Dashboard Overview
+        </h1>
+
+        <a href="/export/" class="bg-blue-600 text-white px-4 py-2 rounded-lg shadow">
+            ⬇ Export
+        </a>
+    </div>
+
+    <!-- KPI CARDS -->
+    <div class="grid grid-cols-3 gap-6">
+
+        <div class="glass p-6 rounded-xl shadow">
+            <p class="text-gray-500">Today Revenue</p>
+            <h2 class="text-2xl font-bold text-blue-600">${{ daily_total }}</h2>
+        </div>
+
+        <div class="glass p-6 rounded-xl shadow">
+            <p class="text-gray-500">Monthly Revenue</p>
+            <h2 class="text-2xl font-bold text-green-600">${{ monthly_total }}</h2>
+        </div>
+
+        <div class="glass p-6 rounded-xl shadow">
+            <p class="text-gray-500">Yearly Revenue</p>
+            <h2 class="text-2xl font-bold text-purple-600">${{ yearly_total }}</h2>
+        </div>
+
+    </div>
+
+    <!-- CHART -->
+    <div class="mt-8 glass p-6 rounded-xl shadow">
+        <canvas id="chart"></canvas>
+    </div>
+
+</div>
+
+<!-- SAFE DATA -->
+{{ labels|json_script:"labels-data" }}
+{{ data|json_script:"sales-data" }}
+
+<script>
+let labels = JSON.parse(document.getElementById('labels-data').textContent);
+let data = JSON.parse(document.getElementById('sales-data').textContent);
+
+const ctx = document.getElementById('chart');
+
+let chart = new Chart(ctx, {
+    type: 'line',
+    data: {
+        labels: labels,
+        datasets: [{
+            label: 'Revenue',
+            data: data,
+            borderColor: '#3b82f6',
+            backgroundColor: 'rgba(59,130,246,0.2)',
+            tension: 0.4,
+            fill: true
+        }]
+    }
+});
+
+// REAL-TIME UPDATE
+async function updateChart() {
+    const res = await fetch('/chart-data/');
+    const json = await res.json();
+
+    chart.data.labels = json.labels;
+    chart.data.datasets[0].data = json.data;
+    chart.update();
+}
+
+setInterval(updateChart, 4000);
+
+// DARK MODE
+function toggleDark() {
+    document.body.classList.toggle('dark');
+}
+</script>
+
+</body>
+</html>
